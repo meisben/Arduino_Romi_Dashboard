@@ -169,7 +169,7 @@ class RomiDashboard(QWidget):
 
     def displayProgramInfo(self):
         mssg = QMessageBox.question(self, 'Romi Dashboard Information',
-            '~~Information~~\n\nThis dashboard takes a serial data written arduino in the form\n"Time(s),PositionX,PositionY,Orientation(deg)".\n\nThe dashboard displays the data in realtime.\n\nThe program saves raw data to a file named "out.csv" and saves formatted\ndata to "outformatted.csv" in the root directory.\n\nData can also be exported by right clicking on graphs\n\nTo get started:\n(1) Search for bluetooth devices\n(2) Connect\n(3) Click"start receiving data from ROMI', QMessageBox.Ok)       
+            '~~Information~~\n\nThis dashboard takes a stream of serial data written over bluetooth from arduino in the form\n"Time(s),PositionX,PositionY,Orientation(deg)".\n\nThe dashboard displays the data in realtime.\n\nThe program saves raw data to a file named "out.csv" and saves formatted\ndata to "outformatted.csv" in the root directory.\n\nData can also be exported by right clicking on graphs\n\nTo get started:\n(1) Search for bluetooth devices\n(2) Connect\n(3) Click"start receiving data from ROMI', QMessageBox.Ok)       
 
     def ScanBluetoothDevices(self):
 
