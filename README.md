@@ -22,7 +22,7 @@ The program is written to help return experimental results for the Romi robot as
 
 The dashboard runs from a single python script. Most of its dependancies are bundled in the standard Anaconda python distribution. These instructions assume you have already installed the standard python Anaconda distribution. Follow these steps to install and run the python script.
 
-*[Note: Skip steps 1 & 2 if you already installed ran opencv in windows using visual studio!]*
+*[Note: Skip steps 1 & 2 if you already installed and ran opencv in windows using visual studio (e.g. as part of MSc Robotics course)!]*
 
 1. Download and run "Visual Studio Installer": [https://www.visualstudio.com/pl/thank-you-downloading-visual-studio/?sku=BuildTools&rel=15](https://www.visualstudio.com/pl/thank-you-downloading-visual-studio/?sku=BuildTools&rel=15)
 
