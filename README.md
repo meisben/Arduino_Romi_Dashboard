@@ -1,4 +1,4 @@
-# Arduino_Romi_Dashboard
+﻿# Arduino_Romi_Dashboard
 
 ## Contents
 
@@ -10,7 +10,7 @@
 
 This dashboard takes a serial data written from the arduino as a bytes object in the form:
 
-"Time(s),PositionX,PositionY,Orientation(deg)\n"
+"Time(s),PositionX,PositionY,Orientation(deg),compFilter(deg),deltaTheta(deg),kalmanStatus(boolean)\n"
 
 The Romi dashboard displays the data in realtime.
 

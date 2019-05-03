@@ -16,6 +16,7 @@ v1.07 - working on porting data receiving code into program to allow receiving d
 v1.08 - working on displaying current position and heading on dashboard (complete)
 v1.09 - [Checkpoint] everything working, in next version i will clean up and export to github
 v1.10 - Cleaning code and exporting to github
+v1.11 - [Checkpoint] Github commit with extended functionaility for experimenting
 """
 
 import io
@@ -24,7 +25,9 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 
-from PyQt5.QtWidgets import (QWidget, QMessageBox, QApplication, QPushButton, QComboBox, QLabel, QGridLayout )
+import PyQt5 as Qt
+
+from PyQt5.QtWidgets import (QWidget, QMessageBox, QApplication, QPushButton, QComboBox, QLabel, QGridLayout, QCheckBox)
 from PyQt5.QtGui import QIcon
 
 from pyqtgraph.Qt import QtGui, QtCore
@@ -52,6 +55,12 @@ class RomiDashboard(QWidget):
 
         headerFont = QtGui.QFont("Times", 14, QtGui.QFont.Bold) #Create font for some large labels
         dialFont = QtGui.QFont("Times", 18, QtGui.QFont.Bold)
+        
+        self.cbExperiment = QCheckBox("Turn 'Experiment Mode' on", self) #create a checkbox
+        self.cbExperiment.toggle()
+        self.cbExperiment.stateChanged.connect(self.experimentModeToggle)
+        self.experimentOn = True
+        self.experimentMultiple = -1 #used to map poseX, poseY values to positive space
 
         self.lblBluetoothAddress = QLabel( self) #create a label
         self.lblBluetoothAddress.resize(self.lblBluetoothAddress.sizeHint())
@@ -60,11 +69,17 @@ class RomiDashboard(QWidget):
         lblNameRomiPoseX = QLabel('X Position (mm)', self) 
         lblNameRomiPoseY = QLabel('Y Position (mm)', self) 
         lblNameRomiPoseTheta = QLabel('Orientation (degrees)', self) 
+        lblNameRomiCompFilter = QLabel('Complimentary Filter (degrees)', self) 
+        lblNameRomiKinematicsOnlyTheta = QLabel('Kinematics delta Theta (degrees) last timestep', self)
+        lblNameRomiKalmanFilter = QLabel('Kalman filter status', self) 
         lblNameRomiPoseX.setFont(headerFont)
         lblNameRomiPoseY.setFont(headerFont)
         lblNameRomiPoseTheta.setFont(headerFont)
+        lblNameRomiCompFilter.setFont(headerFont)
+        lblNameRomiKinematicsOnlyTheta.setFont(headerFont)
+        lblNameRomiKalmanFilter.setFont(headerFont)
 
-        self.lblRomiPoseX = QLabel(' ---', self) 
+        self.lblRomiPoseX = QLabel(' ---', self) #this is createded as a property of 'self' so that it can be accesssed from other functions
         self.lblRomiPoseX.setStyleSheet("background-color: lightcyan")
         self.lblRomiPoseX.setFont(dialFont)
 
@@ -75,6 +90,19 @@ class RomiDashboard(QWidget):
         self.lblRomiPoseTheta = QLabel(' ---', self)
         self.lblRomiPoseTheta.setStyleSheet("background-color: lightcyan")
         self.lblRomiPoseTheta.setFont(dialFont)
+
+        self.lblRomiCompFilter = QLabel(' ---', self)
+        self.lblRomiCompFilter.setStyleSheet("background-color: lightcyan")
+        self.lblRomiCompFilter.setFont(dialFont)
+
+        self.lblRomiKinematicsOnlyTheta = QLabel(' ---', self)
+        self.lblRomiKinematicsOnlyTheta.setStyleSheet("background-color: lightcyan")
+        self.lblRomiKinematicsOnlyTheta.setFont(dialFont)
+
+        self.lblRomiKalmanFilter = QLabel(' ---', self)
+        self.lblRomiKalmanFilter.setStyleSheet("background-color: lightsalmon")
+        self.lblRomiKalmanFilter.setFont(dialFont)
+        self.lblRomiKalmanFilter.setAlignment(QtCore.Qt.AlignCenter | QtCore.Qt.AlignCenter)
         
         self.comboBluetoothName = QComboBox(self) #create a combo box
         self.comboBluetoothName.addItem("Select Bluetooth Device")
@@ -113,7 +141,7 @@ class RomiDashboard(QWidget):
         qbtnProgramInfo.clicked.connect(self.displayProgramInfo)
         qbtnProgramInfo.resize(qbtnProgramInfo.sizeHint())
 
-        # qbtnOptionalDebug = QPushButton('Debug', self)
+        # qbtnOptionalDebug = QPushButton('Debug', self) #code for an optional (and useful) debug button
         # qbtnOptionalDebug.clicked.connect(self.debug)
         # qbtnOptionalDebug.resize(qbtnOptionalDebug.sizeHint())
 
@@ -122,11 +150,12 @@ class RomiDashboard(QWidget):
         qbtnShowGraphs.resize(qbtnShowGraphs.sizeHint())
         qbtnShowGraphs.setStyleSheet("background-color: lightgreen")
         
-        grid = QGridLayout()
+        grid = QGridLayout() #define grid layout
         grid.setSpacing(10)
 
-        grid.addWidget(qbtnScanBluetooth, 1, 0)
+        grid.addWidget(qbtnScanBluetooth, 1, 0) #start adding items to grid
         grid.addWidget(qbtnProgramInfo, 1, 1)
+        grid.addWidget( self.cbExperiment, 1, 2)
         
         grid.addWidget(self.comboBluetoothName, 2, 0)
         grid.addWidget(self.lblBluetoothAddress, 2, 1)
@@ -138,7 +167,7 @@ class RomiDashboard(QWidget):
         grid.addWidget(self.qbtnRomiReceiveData, 4, 0)
         grid.addWidget(self.qbtnRomiStopData, 4, 1)
 
-        # grid.addWidget(qbtnOptionalDebug, 9, 0)
+        # grid.addWidget(qbtnOptionalDebug, 9, 0) #code to add an optional (and useful) debug button
         grid.addWidget(qbtnShowGraphs, 8, 0)
 
         grid.addWidget(lblNameRomiPoseX,10,0)
@@ -149,6 +178,15 @@ class RomiDashboard(QWidget):
         grid.addWidget(self.lblRomiPoseY, 11, 1)
         grid.addWidget(self.lblRomiPoseTheta, 11, 2)
         grid.setRowMinimumHeight(11,200)
+
+        grid.addWidget(lblNameRomiCompFilter,12,0)
+        grid.addWidget(lblNameRomiKinematicsOnlyTheta,12,1)
+        grid.addWidget(lblNameRomiKalmanFilter,12,2)
+
+        grid.addWidget(self.lblRomiCompFilter, 13, 0)
+        grid.addWidget(self.lblRomiKinematicsOnlyTheta, 13, 1)
+        grid.addWidget(self.lblRomiKalmanFilter, 13, 2)
+        grid.setRowMinimumHeight(13,200)
         
         self.setLayout(grid) 
 
@@ -170,6 +208,19 @@ class RomiDashboard(QWidget):
     def displayProgramInfo(self):
         mssg = QMessageBox.question(self, 'Romi Dashboard Information',
             '~~Information~~\n\nThis dashboard takes a stream of serial data written over bluetooth from arduino in the form\n"Time(s),PositionX,PositionY,Orientation(deg)".\n\nThe dashboard displays the data in realtime.\n\nThe program saves raw data to a file named "out.csv" and saves formatted\ndata to "outformatted.csv" in the root directory.\n\nData can also be exported by right clicking on graphs\n\nTo get started:\n(1) Search for bluetooth devices\n(2) Connect\n(3) Click"start receiving data from ROMI', QMessageBox.Ok)       
+    
+    def updateKalmanToggle(self, myKalmanBoolean):
+        
+        if myKalmanBoolean == 1:
+            self.lblRomiKalmanFilter.setText("On")
+            self.lblRomiKalmanFilter.setStyleSheet("background-color: lightgreen")
+        elif myKalmanBoolean == 0:
+            self.lblRomiKalmanFilter.setText("Off")
+            self.lblRomiKalmanFilter.setStyleSheet("background-color: lightcoral")
+        else:
+            self.lblRomiKalmanFilter.setText("?")
+            self.lblRomiKalmanFilter.setStyleSheet("background-color: lightsalmon")
+
 
     def ScanBluetoothDevices(self):
 
@@ -220,6 +271,15 @@ class RomiDashboard(QWidget):
         self.qbtnConnectBluetooth.setEnabled(True)
         self.qbtnRomiReceiveData.setEnabled(False)
 
+    def experimentModeToggle(self):
+        #Change the display mode of the graph windows, and change the poseX, poseY convention to positive from negative
+        self.experimentOn = not self.experimentOn
+
+        if self.experimentOn == True:
+            self.experimentMultiple = -1 #used to map poseX, poseY values to positive space
+        else:
+            self.experimentMultiple = 1
+
     def openGraphWindow(self):
 
         pg.setConfigOptions(antialias=True) #makes graphs look nice
@@ -230,23 +290,41 @@ class RomiDashboard(QWidget):
 
         self.plotPoseTX_TY.setLabel('left', "Position", units='mm') #set graph options
         self.plotPoseTX_TY.setLabel('bottom', "Time", units='s')
-        l = pg.LegendItem((100,60), offset=(70,30))  # args are (size, offset)
+        l = pg.LegendItem((100,60), offset=(70,30))  # args are (size, offset) #create legend
         l.setParentItem(self.plotPoseTX_TY.graphicsItem())
         self.c1 = self.plotPoseTX_TY.plot([], pen=(120,105,244), name="TX curve") 
         self.c2 = self.plotPoseTX_TY.plot([], pen=(0,240,174), name="TY curve")
         l.addItem(self.c1, 'X position')
         l.addItem(self.c2, 'Y position')
         #self.plotPoseTX_TY.setYRange(0, 500, padding=None, update=True)
-
+        
+        
         self.plotPoseXY.showGrid(x=True, y=True) 
         self.plotPoseXY.setLabel('left', "Y Position", units='mm')
         self.plotPoseXY.setLabel('bottom', "X Position", units='mm')
-        self.plotPoseXY.setXRange(0, 1800, padding=None, update=True)
-        self.plotPoseXY.setYRange(0, 1800, padding=None, update=True)
+        #variables for min max range
+        self.minXY = -1000
+        self.maxXY = 1000
+        if self.experimentOn == True:
+            self.plotPoseXY.setXRange(self.minXY, self.maxXY, padding=None, update=True)
+            self.plotPoseXY.setYRange(self.minXY, self.maxXY, padding=None, update=True) 
+        else:
+            self.plotPoseXY.setXRange(0, 1800, padding=None, update=True)
+            self.plotPoseXY.setYRange(0, 1800, padding=None, update=True)
+ 
 
         self.plotPoseTTheta.setLabel('left', "Theta", units='degrees')
         self.plotPoseTTheta.setLabel('bottom', "Time", units='s')
         self.plotPoseTTheta.setYRange(0, 400, padding=None, update=True)
+        
+        l2 = pg.LegendItem((100,60), offset=(70,30))  # args are (size, offset) #create legend
+        l2.setParentItem(self.plotPoseTTheta.graphicsItem())
+        self.c3 = self.plotPoseTTheta.plot([], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10), name="Kalman curve") 
+        self.c4 = self.plotPoseTTheta.plot([], pen=(0,240,174), name="CompFilter curve")
+        l2.addItem(self.c3, 'Kalman Filter')
+        l2.addItem(self.c4, 'Complimentary Filter')
+        #self.plotPoseTX_TY.setYRange(0, 500, padding=None, update=True)
+
 
         self.win = QtGui.QMainWindow() #create a new window
         area = DockArea()              #create a dock area for layout
@@ -271,38 +349,62 @@ class RomiDashboard(QWidget):
 
 
 
-    def update(self):
+    def update(self): #update function
         
         data = self.sock.recv(4024) # receive data
         #print(data) #used for debugging only
         #print(len(data)) #used for debugging only
 
-        if(len(data)<=200 and len(data) >= 20):
-            self.input = io.BytesIO(data)
+        if(len(data)<=200 and len(data) >= 20): #do some stuff if length of bluetooth data received is appropriate
+            self.input = io.BytesIO(data) #setup data buffer object
             wrapperRead = io.TextIOWrapper(self.input, encoding='utf-8')
             self.wrapperWrite.write(wrapperRead.readline())
 
             currentOutput = self.output.getvalue().decode("utf-8") 
             testData = StringIO(currentOutput)
             
-            self.df = pd.read_csv(testData, sep=",", header = None, names = ["Time", "X", "Y", "Theta"])
+            self.df = pd.read_csv(testData, sep=",", header = None, names = ["Time", "X", "Y", "Theta", "compfilterTheta", "kinematicsDeltaTheta", "kalmanFilterStatusBoolean"]) #make pandas dataframe
 
-            self.df.to_csv('out.csv')
+            self.df.to_csv('out.csv') #create unformatted csv file
 
-            self.dfPrim = self.df.dropna()
-            self.dfPrim.to_csv('outFormatted.csv')
+            self.dfPrim = self.df.dropna() #drop any empty rows
+            self.dfPrim.to_csv('outFormatted.csv') #create formatted csv file
 
-            npdfPrim = self.dfPrim.values            
+            npdfPrim = self.dfPrim.values #make numpy version of pandas object due to trouble with plotting of pandas values           
 
             if(len(self.dfPrim.index) >= 3):
-                self.c1 = self.plotPoseTX_TY.plot(npdfPrim[:,1], pen=(120,105,244), name="TX curve")
-                self.c2 = self.plotPoseTX_TY.plot(npdfPrim[:,2], pen=(0,240,174), name="TY curve")
-                self.plotPoseXY.plot(npdfPrim[:,1], npdfPrim[:,2], pen=(0,240,174))
-                self.plotPoseTTheta.plot(npdfPrim[:,3], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10))
+                #calculate max and min
+                if (self.dfPrim.X.iloc[-1]*self.experimentMultiple) < (self.minXY + 100) or (self.dfPrim.Y.iloc[-1]*self.experimentMultiple) < (self.minXY + 100):
+                    self.minXY -= 200
+                else:
+                    pass
 
-                self.lblRomiPoseX.setText(str(self.dfPrim.X.iloc[-1]))
-                self.lblRomiPoseY.setText(str(self.dfPrim.Y.iloc[-1]))
+                if (self.dfPrim.X.iloc[-1]*self.experimentMultiple) > (self.maxXY - 100) or (self.dfPrim.Y.iloc[-1]*self.experimentMultiple) > (self.maxXY - 100):
+                    self.maxXY += 200
+                else:
+                    pass
+
+                #plot values on graph
+                self.c1 = self.plotPoseTX_TY.plot((npdfPrim[:,1]*self.experimentMultiple), pen=(120,105,244), name="TX curve") #update lines on graph
+                self.c2 = self.plotPoseTX_TY.plot((npdfPrim[:,2]*self.experimentMultiple), pen=(0,240,174), name="TY curve") #multiply by self.experimentMultiple to map to positive poseX poseY space in case of non mapping experiments
+
+                self.plotPoseXY.plot((npdfPrim[:,1]*self.experimentMultiple), (npdfPrim[:,2]*self.experimentMultiple), pen=(0,240,174)) #plot values on a graph
+                self.plotPoseXY.setXRange(self.minXY, self.maxXY, padding=None, update=True) #update axis ranges
+                self.plotPoseXY.setYRange(self.minXY, self.maxXY, padding=None, update=True) 
+
+                self.c3 = self.plotPoseTTheta.plot(npdfPrim[:,3], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10), name="Kalman curve") #update lines on graph
+                self.c4 = self.plotPoseTTheta.plot(npdfPrim[:,4], pen=(0,240,174), name="CompFilter curve")
+
+                self.lblRomiPoseX.setText(str(self.dfPrim.X.iloc[-1]*self.experimentMultiple)) #update text in labels
+                self.lblRomiPoseY.setText(str(self.dfPrim.Y.iloc[-1]*self.experimentMultiple)) #multiply by self.experimentMultiple to map to positive poseX poseY space in case of non mapping experiments
                 self.lblRomiPoseTheta.setText(str(self.dfPrim.Theta.iloc[-1]))
+                self.lblRomiCompFilter.setText(str(self.dfPrim.compfilterTheta.iloc[-1]))
+                self.lblRomiKinematicsOnlyTheta.setText(str(self.dfPrim.kinematicsDeltaTheta.iloc[-1]))
+                
+                #self.lblRomiKalmanFilter.setText(str(self.dfPrim.kalmanFilterStatusBoolean.iloc[-1]))
+                self.updateKalmanToggle(self.dfPrim.kalmanFilterStatusBoolean.iloc[-1])
+
+
             else:
                 pass
         
