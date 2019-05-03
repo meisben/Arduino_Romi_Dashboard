@@ -389,8 +389,11 @@ class RomiDashboard(QWidget):
                 self.c2 = self.plotPoseTX_TY.plot((npdfPrim[:,2]*self.experimentMultiple), pen=(0,240,174), name="TY curve") #multiply by self.experimentMultiple to map to positive poseX poseY space in case of non mapping experiments
 
                 self.plotPoseXY.plot((npdfPrim[:,1]*self.experimentMultiple), (npdfPrim[:,2]*self.experimentMultiple), pen=(0,240,174)) #plot values on a graph
-                self.plotPoseXY.setXRange(self.minXY, self.maxXY, padding=None, update=True) #update axis ranges
-                self.plotPoseXY.setYRange(self.minXY, self.maxXY, padding=None, update=True) 
+                if self.experimentOn == True:
+                    self.plotPoseXY.setXRange(self.minXY, self.maxXY, padding=None, update=True)#update axis ranges
+                    self.plotPoseXY.setYRange(self.minXY, self.maxXY, padding=None, update=True) 
+                else:
+                    pass
 
                 self.c3 = self.plotPoseTTheta.plot(npdfPrim[:,3], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10), name="Kalman curve") #update lines on graph
                 self.c4 = self.plotPoseTTheta.plot(npdfPrim[:,4], pen=(0,240,174), name="CompFilter curve")
