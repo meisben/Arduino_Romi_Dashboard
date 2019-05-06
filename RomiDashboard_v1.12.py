@@ -17,6 +17,8 @@ v1.08 - working on displaying current position and heading on dashboard (complet
 v1.09 - [Checkpoint] everything working, in next version i will clean up and export to github
 v1.10 - Cleaning code and exporting to github
 v1.11 - [Checkpoint] Github commit with extended functionaility for experimenting
+v1.11a - added nicer graph colours and better labeling
+v1.12 - [Checkpoint] Github commit with more user friendly labelling and graph colours when using/not using Kalman filter
 """
 
 import io
@@ -191,6 +193,9 @@ class RomiDashboard(QWidget):
         self.setLayout(grid) 
 
         self.show()
+
+        #create bool for checking kalman status on startup
+        self.startupKalmanCheck = False
         
         
          
@@ -207,7 +212,7 @@ class RomiDashboard(QWidget):
 
     def displayProgramInfo(self):
         mssg = QMessageBox.question(self, 'Romi Dashboard Information',
-            '~~Information~~\n\nThis dashboard takes a stream of serial data written over bluetooth from arduino in the form\n"Time(s),PositionX,PositionY,Orientation(deg)".\n\nThe dashboard displays the data in realtime.\n\nThe program saves raw data to a file named "out.csv" and saves formatted\ndata to "outformatted.csv" in the root directory.\n\nData can also be exported by right clicking on graphs\n\nTo get started:\n(1) Search for bluetooth devices\n(2) Connect\n(3) Click"start receiving data from ROMI', QMessageBox.Ok)       
+            '~~Information~~\n\nThis dashboard takes a stream of serial data written over bluetooth from arduino in the form\n"Time(s),PositionX,PositionY,Orientation(deg),compFilter(deg),kinematicsDiff(deg),kalmanStatus(bool)".\n\nThe dashboard displays the data in realtime.\n\nThe program saves raw data to a file named "out.csv" and saves formatted\ndata to "outformatted.csv" in the root directory.\n\nData can also be exported by right clicking on graphs\n\nTo get started:\n(1) Search for bluetooth devices\n(2) Connect\n(3) Click"start receiving data from ROMI\n\nThe "Experiment mode" check box should be activated when the Romi robot is not performing a mapping activity and you are using the Romi for other types of experiments', QMessageBox.Ok)       
     
     def updateKalmanToggle(self, myKalmanBoolean):
         
@@ -317,15 +322,11 @@ class RomiDashboard(QWidget):
         self.plotPoseTTheta.setLabel('bottom', "Time", units='s')
         self.plotPoseTTheta.setYRange(0, 400, padding=None, update=True)
         
-        l2 = pg.LegendItem((100,60), offset=(70,30))  # args are (size, offset) #create legend
-        l2.setParentItem(self.plotPoseTTheta.graphicsItem())
+        self.l2 = pg.LegendItem((100,60), offset=(70,30))  # args are (size, offset) #create legend
+        self.l2.setParentItem(self.plotPoseTTheta.graphicsItem())
         self.c3 = self.plotPoseTTheta.plot([], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10), name="Kalman curve") 
-        self.c4 = self.plotPoseTTheta.plot([], pen=(0,240,174), name="CompFilter curve")
-        l2.addItem(self.c3, 'Kalman Filter')
-        l2.addItem(self.c4, 'Complimentary Filter')
-        #self.plotPoseTX_TY.setYRange(0, 500, padding=None, update=True)
-
-
+        self.c4 = self.plotPoseTTheta.plot([], pen=(240,0,0), name="CompFilter curve")
+        
         self.win = QtGui.QMainWindow() #create a new window
         area = DockArea()              #create a dock area for layout
         self.win.setCentralWidget(area) #associate window with the dock area
@@ -373,6 +374,20 @@ class RomiDashboard(QWidget):
             npdfPrim = self.dfPrim.values #make numpy version of pandas object due to trouble with plotting of pandas values           
 
             if(len(self.dfPrim.index) >= 3):
+                #Check if Kalman filter is turned on
+                self.updateKalmanToggle(self.dfPrim.kalmanFilterStatusBoolean.iloc[-1])
+
+                if self.startupKalmanCheck == False:
+                    self.startupKalmanCheck = True
+
+                    if self.dfPrim.kalmanFilterStatusBoolean.iloc[-1] == 0:
+                        self.l2.addItem(self.c3, 'Kinematics orientation estimate')
+                        self.l2.addItem(self.c4, 'Complimentary filter')
+                    else:
+                        self.l2.addItem(self.c3, 'Kalman filter')
+                        self.l2.addItem(self.c4, 'Complimentary filter')
+
+
                 #calculate max and min
                 if (self.dfPrim.X.iloc[-1]*self.experimentMultiple) < (self.minXY + 100) or (self.dfPrim.Y.iloc[-1]*self.experimentMultiple) < (self.minXY + 100):
                     self.minXY -= 200
@@ -396,16 +411,15 @@ class RomiDashboard(QWidget):
                     pass
 
                 self.c3 = self.plotPoseTTheta.plot(npdfPrim[:,3], pen=(73,53,244), fillLevel=0, fillBrush=(149,246,219,10), name="Kalman curve") #update lines on graph
-                self.c4 = self.plotPoseTTheta.plot(npdfPrim[:,4], pen=(0,240,174), name="CompFilter curve")
+                self.c4 = self.plotPoseTTheta.plot(npdfPrim[:,4], pen=(240,0,0), name="CompFilter curve")
 
                 self.lblRomiPoseX.setText(str(self.dfPrim.X.iloc[-1]*self.experimentMultiple)) #update text in labels
                 self.lblRomiPoseY.setText(str(self.dfPrim.Y.iloc[-1]*self.experimentMultiple)) #multiply by self.experimentMultiple to map to positive poseX poseY space in case of non mapping experiments
                 self.lblRomiPoseTheta.setText(str(self.dfPrim.Theta.iloc[-1]))
                 self.lblRomiCompFilter.setText(str(self.dfPrim.compfilterTheta.iloc[-1]))
-                self.lblRomiKinematicsOnlyTheta.setText(str(self.dfPrim.kinematicsDeltaTheta.iloc[-1]))
+                self.lblRomiKinematicsOnlyTheta.setText(str(self.dfPrim.kinematicsDeltaTheta.iloc[-1]))            
+
                 
-                #self.lblRomiKalmanFilter.setText(str(self.dfPrim.kalmanFilterStatusBoolean.iloc[-1]))
-                self.updateKalmanToggle(self.dfPrim.kalmanFilterStatusBoolean.iloc[-1])
 
 
             else:
