@@ -8,7 +8,15 @@
 
 # Purpose
 
-This dashboard takes a serial data written from the arduino as a bytes object in the form:
+This dashboard displays and records the realtime position of a robot (we used the Arduino 'Romi'). It uses pyqt and pyqtgraph as a Graphical User Interface (GUI). It displays and records:
+
+- Cartesian X position (mm)
+- Cartesian Y position (mm)
+- Orientation (degrees)
+- Orientation [Using kalman filter] (degrees)
+- Kalman Status (on/off)
+
+This dashboard takes a serial data written from the arduino robot as a bytes object in the form:
 
 "Time(s),PositionX,PositionY,Orientation(deg),compFilter(deg),deltaTheta(deg),kalmanStatus(boolean)\n"
 
@@ -18,9 +26,28 @@ The program saves raw data to a file named "out.csv" and saves formatted data to
 
 The program is written to help return experimental results for the Romi robot as part of a university course.
 
+# Can I see a video of it  in action?
+
+Yes ! here:
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=QUWGgHYCovE
+" target="_blank"><img src="http://img.youtube.com/vi/QUWGgHYCovE/0.jpg" 
+alt="Romi Robot during experiment" width="240" height="180" border="10" /></a>
+
+# Can I see a screenshot of the program?
+
+Sure! Here:
+
+(*Note to see full size images, see readme_images folder*) 
+
+| Main screen     | Graph interface (pyqtgraph)      | Realtime data      |
+|------------|-------------|-------------|
+| ![alt text](\readme_images\Dashboard_screenshot3.png) | ![alt text](\readme_images\Dashboard_screenshot1.png) | ![alt text](\readme_images\Dashboard_screenshot2.png) |
+
+
 # Installation
 
-The dashboard runs from a single python script. Most of its dependancies are bundled in the standard Anaconda python distribution. These instructions assume you have already installed the standard python Anaconda distribution. Follow these steps to install and run the python script.
+The dashboard runs from a single python script. It has been tested on Windows and Linux. Most of its dependancies are bundled in the standard Anaconda python distribution. These instructions assume you have already installed the standard python Anaconda distribution. Follow these steps to install and run the python script.
 
 *[Note: Skip steps 1 & 2 if you already installed and ran opencv in windows using visual studio (e.g. as part of MSc Robotics course)!]*
 

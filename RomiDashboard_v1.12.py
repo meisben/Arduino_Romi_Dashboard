@@ -1,24 +1,40 @@
 """
 Author: Ben Money-Coomes
 
-Purpose: Test out embedding pyqtgraph into pyqt5 gui and updating live
+Purpose: 
+
+    This dashboard displays and records the realtime position of a robot (we used the Arduino 'Romi'). It uses pyqt and pyqtgraph as a Graphical User Interface (GUI). It displays and records:
+
+    - Cartesian X position (mm)
+    - Cartesian Y position (mm)
+    - Orientation (degrees)
+    - Orientation [Using kalman filter] (degrees)
+    - Kalman Status (on/off)
+
+    This dashboard takes a serial data written from the arduino as a bytes object in the form:
+
+    "Time(s),PositionX,PositionY,Orientation(deg),compFilter(deg),deltaTheta(deg),kalmanStatus(boolean)\n"
+
+    The Romi dashboard displays the data in realtime.
+
+    This was an early program I wrote and I didn't do the best job of commenting. If you are trying to use some of the code, please get in touch. You can message me direct on github (meisben)
 
 Version control:
 
-v1.00 - Graph is updating from text file in root folder
-v1.01 - Working on adding multiple graphs and updating from the same data source (All working fine)
-v1.02 - Looking into adding docked graphs for more flexible layout (this is working - in the next version I'm cleaning extra window code into new function)
-v1.03 - Graphs are all in seperate dockable window (complete)
-v1.04 - working on creating correct buttons, and labels in right places (complete)
-v1.05 - working on connecting and disconnecting from bluetooth with correct combo and lbl functionality (combo box working)
-v1.06 - continued working on v1.05 aims (complete)
-v1.07 - working on porting data receiving code into program to allow receiving data from Romi and plotting it on all graphs (I think complete - need to check on Romi)
-v1.08 - working on displaying current position and heading on dashboard (complete)
-v1.09 - [Checkpoint] everything working, in next version i will clean up and export to github
-v1.10 - Cleaning code and exporting to github
-v1.11 - [Checkpoint] Github commit with extended functionaility for experimenting
-v1.11a - added nicer graph colours and better labeling
-v1.12 - [Checkpoint] Github commit with more user friendly labelling and graph colours when using/not using Kalman filter
+    v1.00 - Graph is updating from text file in root folder
+    v1.01 - Working on adding multiple graphs and updating from the same data source (All working fine)
+    v1.02 - Looking into adding docked graphs for more flexible layout (this is working - in the next version I'm cleaning extra window code into new function)
+    v1.03 - Graphs are all in seperate dockable window (complete)
+    v1.04 - working on creating correct buttons, and labels in right places (complete)
+    v1.05 - working on connecting and disconnecting from bluetooth with correct combo and lbl functionality (combo box working)
+    v1.06 - continued working on v1.05 aims (complete)
+    v1.07 - working on porting data receiving code into program to allow receiving data from Romi and plotting it on all graphs (I think complete - need to check on Romi)
+    v1.08 - working on displaying current position and heading on dashboard (complete)
+    v1.09 - [Checkpoint] everything working, in next version i will clean up and export to github
+    v1.10 - Cleaning code and exporting to github
+    v1.11 - [Checkpoint] Github commit with extended functionaility for experimenting
+    v1.11a - added nicer graph colours and better labeling
+    v1.12 - [Checkpoint] Github commit with more user friendly labelling and graph colours when using/not using Kalman filter
 """
 
 import io
