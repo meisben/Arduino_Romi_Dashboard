@@ -38,7 +38,7 @@ alt="Romi Robot during experiment" width="240" height="180" border="10" /></a>
 
 Sure! Here:
 
-(*Note to see full size images, see readme_images folder*) 
+(*Note to see full size images click on image!*) 
 
 | Main screen     | Graph interface (pyqtgraph)      | Realtime data      |
 |------------|-------------|-------------|
