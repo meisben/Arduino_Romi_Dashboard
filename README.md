@@ -42,7 +42,7 @@ Sure! Here:
 
 | Main screen     | Graph interface (pyqtgraph)      | Realtime data      |
 |------------|-------------|-------------|
-| ![alt text](/readme_images/Dashboard_screenshot3.png) | ![alt text](\readme_images\Dashboard_screenshot1.png) | ![alt text](\readme_images\Dashboard_screenshot2.png) |
+| ![alt text](readme_images/Dashboard_screenshot3.png) | ![alt text](readme_images\Dashboard_screenshot1.png) | ![alt text](\readme_images\Dashboard_screenshot2.png) |
 
 
 # Installation
